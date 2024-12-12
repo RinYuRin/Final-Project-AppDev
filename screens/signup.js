@@ -7,7 +7,6 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import Toast from 'react-native-toast-message';
 import background from '../assets/pictures/BG 1.png';
-import Facebook from '../assets/pictures/facebook.png';
 import user from '../assets/pictures/user.png';
 import lock from '../assets/pictures/lock.png';
 
@@ -53,17 +52,6 @@ export default function Signup() {
     return (
         <ImageBackground source={background} resizeMode="cover" style={styles.container}>
             <View style={styles.buttonContainer}>
-
-                <TouchableOpacity style={styles.fbButton}>
-                    <Image source={Facebook} style={styles.Facebook} />
-                    <Text style={styles.fbButtonText}>Continue with Facebook</Text>
-                </TouchableOpacity>
-
-                <View style={styles.divider}>
-                    <View style={styles.line} />
-                    <Text style={styles.orText}>OR</Text>
-                    <View style={styles.line} />
-                </View>
 
                 <View style={styles.inputContainer}>
                     <TextInput

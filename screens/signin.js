@@ -5,8 +5,7 @@ import { useFonts } from 'expo-font';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import Toast from 'react-native-toast-message';
 import { auth } from '../firebaseConfig';
-import background from '../assets/pictures/BG 1.png'; // Background image path
-import Facebook from '../assets/pictures/facebook.png';
+import background from '../assets/pictures/BG 1.png';
 import user from '../assets/pictures/user.png';
 import lock from '../assets/pictures/lock.png';
 
@@ -48,17 +47,6 @@ export default function Signin() {
     return (
         <ImageBackground source={background} resizeMode="cover" style={styles.container}>
             <View style={styles.buttonContainer}>
-
-                <TouchableOpacity style={styles.fbButton}>
-                    <Image source={Facebook} style={styles.Facebook} />
-                    <Text style={styles.fbButtonText}>Continue with Facebook</Text>
-                </TouchableOpacity>
-
-                <View style={styles.divider}>
-                    <View style={styles.line} />
-                    <Text style={styles.orText}>OR</Text>
-                    <View style={styles.line} />
-                </View>
 
                 <View style={styles.inputContainer}>
                     <TextInput
