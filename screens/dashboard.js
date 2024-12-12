@@ -6,8 +6,6 @@ import { ref, set, onValue } from 'firebase/database';
 import { signOut } from 'firebase/auth';
 import { realtimedb, auth } from '../firebaseConfig';
 import Toast from 'react-native-toast-message';
-
-// Import assets
 import balloon from '../assets/pictures/balloon acct level (1).png';
 import savingpiggy from '../assets/pictures/Group 6.png';
 import bed from '../assets/pictures/image (3) 1.png';
