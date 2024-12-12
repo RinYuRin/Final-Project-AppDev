@@ -3,7 +3,11 @@ import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView } from 'rea
 import { useNavigation } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { ref, set, onValue } from 'firebase/database';
-import { realtimedb } from '../firebaseConfig';
+import { signOut } from 'firebase/auth';
+import { realtimedb, auth } from '../firebaseConfig';
+import Toast from 'react-native-toast-message';
+
+// Import assets
 import balloon from '../assets/pictures/balloon acct level (1).png';
 import savingpiggy from '../assets/pictures/Group 6.png';
 import bed from '../assets/pictures/image (3) 1.png';
@@ -20,6 +24,7 @@ import logout from '../assets/pictures/logout.png';
 export default function Dashboard() {
     const navigation = useNavigation();
     const [savings, setSavings] = useState(0);
+    const [userId, setUserId] = useState(null);
 
     const [loaded] = useFonts({
         'Poppins-Bold': require('../assets/fonts/Poppins-Bold.ttf'),
@@ -27,20 +32,26 @@ export default function Dashboard() {
     });
 
     useEffect(() => {
-        const savingsRef = ref(realtimedb, 'savings');
-        const unsubscribe = onValue(savingsRef, (snapshot) => {
-            const data = snapshot.val();
-            setSavings(data || 0);
+        const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+            if (user) {
+                setUserId(user.uid);
+                const savingsRef = ref(realtimedb, `users/${user.uid}/savings`);
+                onValue(savingsRef, (snapshot) => {
+                    setSavings(snapshot.val() || 0);
+                });
+            } else {
+                navigation.navigate('Signin');
+            }
         });
 
-        return () => unsubscribe();
-    }, []);
+        return () => unsubscribeAuth();
+    }, [navigation]);
 
     if (!loaded) {
         return null;
     }
 
-    // Array of task items
+    // Task data
     const chores = [
         { id: 1, image: bed, task: "Make your bed", reward: 5 },
         { id: 2, image: dishes, task: "Wash the Dishes", reward: 20 },
@@ -57,29 +68,75 @@ export default function Dashboard() {
         { id: 7, image: brush, task: "Brush your Teeth", reward: 20 },
     ];
 
+    // Handle task click
     const handleTaskClick = (id, task, reward) => {
-        const taskRef = ref(realtimedb, `tasks/${id}`);
-        set(taskRef, {
-            task,
-            reward,
-            completed: true,
-        })
-            .then(() => {
-                console.log("Task successfully saved to the database!");
+        if (!userId) return;
 
-                
-                const savingsRef = ref(realtimedb, 'savings');
-                set(savingsRef, savings + reward);
+        const taskRef = ref(realtimedb, `users/${userId}/tasks/${id}`);
+
+        onValue(taskRef, (snapshot) => {
+            const taskData = snapshot.val();
+            const currentTime = Date.now();
+
+            if (taskData?.completed && currentTime - taskData.timestamp < 86400000) {
+                Toast.show({
+                    type: 'info',
+                    text1: 'Task already completed',
+                    text2: 'You can complete this task again tomorrow!',
+                });
+                return;
+            }
+
+            set(taskRef, {
+                task,
+                reward,
+                completed: true,
+                timestamp: currentTime,
+            })
+                .then(() => {
+                    const savingsRef = ref(realtimedb, `users/${userId}/savings`);
+                    set(savingsRef, savings + reward);
+
+                    Toast.show({
+                        type: 'success',
+                        text1: 'Task Completed!',
+                        text2: `You've earned ₱${reward.toFixed(2)}`,
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error saving task to database:", error);
+
+                    Toast.show({
+                        type: 'error',
+                        text1: 'Error',
+                        text2: 'Could not complete the task. Try again.',
+                    });
+                });
+        }, { onlyOnce: true });
+    };
+
+    const handleLogout = () => {
+        signOut(auth)
+            .then(() => {
+                Toast.show({
+                    type: 'success',
+                    text1: 'Logged Out Successfully',
+                });
+                navigation.navigate('Signin');
             })
             .catch((error) => {
-                console.error("Error saving task to database:", error);
+                Toast.show({
+                    type: 'error',
+                    text1: 'Logout Failed',
+                    text2: error.message,
+                });
             });
     };
 
     return (
         <View style={{ backgroundColor: '#CBE3C1', flex: 1 }}>
             <View style={styles.header}>
-                <Text style={styles.greeting}>Hello Stephanie!</Text>
+                <Text style={styles.greeting}>Hello!</Text>
                 <Image source={balloon} style={styles.balloon} />
             </View>
 
@@ -139,12 +196,14 @@ export default function Dashboard() {
                         <Image source={task} style={styles.navbarButtonImage} />
                         <Text style={styles.navbarText}>Tasks</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => navigation.navigate('Homepage')} style={styles.navbarButton}>
+                    <TouchableOpacity onPress={handleLogout} style={styles.navbarButton}>
                         <Image source={logout} style={styles.navbarButtonImage} />
                         <Text style={styles.navbarText}>Logout</Text>
                     </TouchableOpacity>
                 </View>
             </View>
+
+            <Toast />
         </View>
     );
 }
@@ -162,6 +221,7 @@ const TaskItem = ({ id, image, task, reward, onTaskClick }) => {
         </TouchableOpacity>
     );
 };
+
 
 const styles = StyleSheet.create({
     header: {

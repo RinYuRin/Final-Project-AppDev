@@ -5,7 +5,7 @@ import { useFonts } from 'expo-font';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import Toast from 'react-native-toast-message';
 import { auth } from '../firebaseConfig';
-import background from '../assets/pictures/BG 1.png';
+import background from '../assets/pictures/BG 1.png'; // Background image path
 import Facebook from '../assets/pictures/facebook.png';
 import user from '../assets/pictures/user.png';
 import lock from '../assets/pictures/lock.png';
