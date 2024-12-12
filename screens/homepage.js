@@ -28,7 +28,7 @@ export default function Homepage() {
                 onPress={() => navigation.navigate('Aboutus')}
             >
                 <Image
-                    source={require('../assets/pictures/aboutus.png')}  // Ensure correct image path
+                    source={require('../assets/pictures/aboutus.png')}
                     style={styles.icon}
                 />
             </TouchableOpacity>

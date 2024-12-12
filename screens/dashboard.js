@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
+import { ref, set, onValue } from 'firebase/database';
+import { realtimedb } from '../firebaseConfig';
 import balloon from '../assets/pictures/balloon acct level (1).png';
 import savingpiggy from '../assets/pictures/Group 6.png';
 import bed from '../assets/pictures/image (3) 1.png';
@@ -15,13 +17,24 @@ import home from '../assets/pictures/home.png';
 import task from '../assets/pictures/task.png';
 import logout from '../assets/pictures/logout.png';
 
-
 export default function Dashboard() {
     const navigation = useNavigation();
+    const [savings, setSavings] = useState(0);
+
     const [loaded] = useFonts({
         'Poppins-Bold': require('../assets/fonts/Poppins-Bold.ttf'),
         'Poppins-Regular': require('../assets/fonts/Poppins-Regular.ttf'),
     });
+
+    useEffect(() => {
+        const savingsRef = ref(realtimedb, 'savings');
+        const unsubscribe = onValue(savingsRef, (snapshot) => {
+            const data = snapshot.val();
+            setSavings(data || 0);
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     if (!loaded) {
         return null;
@@ -29,20 +42,39 @@ export default function Dashboard() {
 
     // Array of task items
     const chores = [
-        { id: 1, image: bed, task: "Make your bed", reward: "+₱5.00" },
-        { id: 2, image: dishes, task: "Wash the Dishes", reward: "+₱20.00" },
-        { id: 3, image: pet, task: "Feed the Pet", reward: "+₱15.00" },
+        { id: 1, image: bed, task: "Make your bed", reward: 5 },
+        { id: 2, image: dishes, task: "Wash the Dishes", reward: 20 },
+        { id: 3, image: pet, task: "Feed the Pet", reward: 15 },
     ];
 
     const homework = [
-        { id: 1, image: dohomework, task: "Do the homework", reward: "+₱5.00" },
-        { id: 2, image: read, task: "Read for 20 minutes", reward: "+₱20.00" },
+        { id: 4, image: dohomework, task: "Do the homework", reward: 5 },
+        { id: 5, image: read, task: "Read for 20 minutes", reward: 20 },
     ];
 
     const hygiene = [
-        { id: 1, image: bath, task: "Take a Bath", reward: "+₱20.00" },
-        { id: 2, image: brush, task: "Brush your Teeth", reward: "+₱20.00" },
+        { id: 6, image: bath, task: "Take a Bath", reward: 20 },
+        { id: 7, image: brush, task: "Brush your Teeth", reward: 20 },
     ];
+
+    const handleTaskClick = (id, task, reward) => {
+        const taskRef = ref(realtimedb, `tasks/${id}`);
+        set(taskRef, {
+            task,
+            reward,
+            completed: true,
+        })
+            .then(() => {
+                console.log("Task successfully saved to the database!");
+
+                
+                const savingsRef = ref(realtimedb, 'savings');
+                set(savingsRef, savings + reward);
+            })
+            .catch((error) => {
+                console.error("Error saving task to database:", error);
+            });
+    };
 
     return (
         <View style={{ backgroundColor: '#CBE3C1', flex: 1 }}>
@@ -54,26 +86,46 @@ export default function Dashboard() {
             <View style={styles.savingsContainer}>
                 <Text style={styles.savingsLabel}>YOUR SAVINGS</Text>
                 <View style={styles.savings}>
-                    <Text style={styles.savingsAmount}>₱100.00</Text>
+                    <Text style={styles.savingsAmount}>₱{savings.toFixed(2)}</Text>
                     <Image source={savingpiggy} style={styles.savingpiggy} />
                 </View>
             </View>
 
-            {/* Updated ScrollView */}
             <ScrollView contentContainerStyle={styles.taskContainer}>
                 <Text style={styles.taskHeader}>Chore Tasks</Text>
                 {chores.map((task) => (
-                    <TaskItem key={task.id} image={task.image} task={task.task} reward={task.reward} />
+                    <TaskItem
+                        key={task.id}
+                        id={task.id}
+                        image={task.image}
+                        task={task.task}
+                        reward={task.reward}
+                        onTaskClick={handleTaskClick}
+                    />
                 ))}
 
                 <Text style={styles.taskHeader}>Homework and School Tasks</Text>
                 {homework.map((task) => (
-                    <TaskItem key={task.id} image={task.image} task={task.task} reward={task.reward} />
+                    <TaskItem
+                        key={task.id}
+                        id={task.id}
+                        image={task.image}
+                        task={task.task}
+                        reward={task.reward}
+                        onTaskClick={handleTaskClick}
+                    />
                 ))}
 
                 <Text style={styles.taskHeader}>Personal Hygiene Tasks</Text>
                 {hygiene.map((task) => (
-                    <TaskItem key={task.id} image={task.image} task={task.task} reward={task.reward} />
+                    <TaskItem
+                        key={task.id}
+                        id={task.id}
+                        image={task.image}
+                        task={task.task}
+                        reward={task.reward}
+                        onTaskClick={handleTaskClick}
+                    />
                 ))}
             </ScrollView>
 
@@ -97,16 +149,17 @@ export default function Dashboard() {
     );
 }
 
-// TaskItem component to display individual tasks
-const TaskItem = ({ image, task, reward }) => {
+const TaskItem = ({ id, image, task, reward, onTaskClick }) => {
     return (
-        <View style={styles.taskItem}>
-            <Image source={image} style={styles.taskImage} />
-            <View style={styles.taskDetails}>
-                <Text style={styles.taskText}>{task}</Text>
-                <Text style={styles.rewardText}>{reward}</Text>
+        <TouchableOpacity onPress={() => onTaskClick(id, task, reward)}>
+            <View style={styles.taskItem}>
+                <Image source={image} style={styles.taskImage} />
+                <View style={styles.taskDetails}>
+                    <Text style={styles.taskText}>{task}</Text>
+                    <Text style={styles.rewardText}>+₱{reward.toFixed(2)}</Text>
+                </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 };
 

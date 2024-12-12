@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, TextInput, ImageBackground, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import background from '../assets/pictures/BG 1.png'; // Background image path
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import Toast from 'react-native-toast-message';
+import { auth } from '../firebaseConfig';
+import background from '../assets/pictures/BG 1.png';
 import Facebook from '../assets/pictures/facebook.png';
 import user from '../assets/pictures/user.png';
 import lock from '../assets/pictures/lock.png';
@@ -14,42 +17,62 @@ export default function Signin() {
         'Poppins-Regular': require('../assets/fonts/Poppins-Regular.ttf'),
     });
 
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
     if (!loaded) {
         return null;
     }
 
+    const handleSignin = async () => {
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            Toast.show({
+                type: 'success',
+                text1: 'Logged In Successfully',
+                position: 'top',
+            });
+            setTimeout(() => {
+                navigation.navigate('Dashboard');
+            }, 1500);
+        } catch (error) {
+            Toast.show({
+                type: 'error',
+                text1: 'Sign-In Failed',
+                text2: error.message,
+                position: 'top',
+            });
+        }
+    };
+
     return (
         <ImageBackground source={background} resizeMode="cover" style={styles.container}>
             <View style={styles.buttonContainer}>
-                
+
                 <TouchableOpacity style={styles.fbButton}>
                     <Image source={Facebook} style={styles.Facebook} />
                     <Text style={styles.fbButtonText}>Continue with Facebook</Text>
                 </TouchableOpacity>
 
-                
                 <View style={styles.divider}>
                     <View style={styles.line} />
                     <Text style={styles.orText}>OR</Text>
                     <View style={styles.line} />
                 </View>
 
-                
                 <View style={styles.inputContainer}>
                     <TextInput
                         style={styles.input}
-                        placeholder="Username"
-                        value={username}
-                        onChangeText={setUsername}
+                        placeholder="Email"
+                        value={email}
+                        onChangeText={setEmail}
                         placeholderTextColor="#FFA000"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
                     />
                     <Image source={user} style={styles.icon} />
                 </View>
 
-                
                 <View style={styles.inputContainer}>
                     <TextInput
                         style={styles.input}
@@ -62,8 +85,7 @@ export default function Signin() {
                     <Image source={lock} style={styles.icon} />
                 </View>
 
-                
-                <TouchableOpacity onPress={() => navigation.navigate('Dashboard')} style={styles.signinButton}>
+                <TouchableOpacity onPress={handleSignin} style={styles.signinButton}>
                     <Text style={styles.signinButtonText}>Sign In</Text>
                 </TouchableOpacity>
             </View>
@@ -71,9 +93,12 @@ export default function Signin() {
             <TouchableOpacity onPress={() => navigation.navigate('Homepage')} style={styles.backButton}>
                 <Text style={styles.backButtonText}>back</Text>
             </TouchableOpacity>
+
+            <Toast />
         </ImageBackground>
     );
 }
+
 
 const styles = StyleSheet.create({
     container: {

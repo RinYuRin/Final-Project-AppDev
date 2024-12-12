@@ -2,7 +2,10 @@ import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, TextInput, ImageBackground, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import background from '../assets/pictures/BG 1.png'; // Background image path
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../firebaseConfig';
+import Toast from 'react-native-toast-message';
+import background from '../assets/pictures/BG 1.png';
 import Facebook from '../assets/pictures/facebook.png';
 import user from '../assets/pictures/user.png';
 import lock from '../assets/pictures/lock.png';
@@ -14,42 +17,66 @@ export default function Signup() {
         'Poppins-Regular': require('../assets/fonts/Poppins-Regular.ttf'),
     });
 
-    const [username, setUsername] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
     if (!loaded) {
         return null;
     }
 
+    const handleSignup = async () => {
+        try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            console.log('User created successfully');
+            Toast.show({
+                type: 'success',
+                text1: 'Successfull Creation! ',
+                text2: 'Your account has been successfully created! 🎉',
+                position: 'top',
+            });
+            setTimeout(() => {
+                navigation.navigate('Homepage');
+            }, 1500);
+        } catch (error) {
+            console.log('Signup error:', error.message);
+            Toast.show({
+                type: 'error',
+                text1: 'Signup Failed',
+                text2: error.message,
+                position: 'top',
+            });
+        }
+    };
+    
+
     return (
         <ImageBackground source={background} resizeMode="cover" style={styles.container}>
             <View style={styles.buttonContainer}>
-                
+
                 <TouchableOpacity style={styles.fbButton}>
                     <Image source={Facebook} style={styles.Facebook} />
                     <Text style={styles.fbButtonText}>Continue with Facebook</Text>
                 </TouchableOpacity>
 
-                
                 <View style={styles.divider}>
                     <View style={styles.line} />
                     <Text style={styles.orText}>OR</Text>
                     <View style={styles.line} />
                 </View>
 
-                
                 <View style={styles.inputContainer}>
                     <TextInput
                         style={styles.input}
-                        placeholder="Username"
-                        value={username}
-                        onChangeText={setUsername}
+                        placeholder="Email"
+                        value={email}
+                        onChangeText={setEmail}
                         placeholderTextColor="#FFA000"
+                        keyboardType="email-address"
+                        autoCapitalize="none"
                     />
                     <Image source={user} style={styles.icon} />
                 </View>
 
-                
                 <View style={styles.inputContainer}>
                     <TextInput
                         style={styles.input}
@@ -62,16 +89,16 @@ export default function Signup() {
                     <Image source={lock} style={styles.icon} />
                 </View>
 
-                
-                <TouchableOpacity style={styles.signupButton}>
+                <TouchableOpacity style={styles.signupButton} onPress={handleSignup}>
                     <Text style={styles.signupButtonText}>Sign Up</Text>
                 </TouchableOpacity>
             </View>
 
-            
             <TouchableOpacity onPress={() => navigation.navigate('Homepage')} style={styles.backButton}>
                 <Text style={styles.backButtonText}>back</Text>
             </TouchableOpacity>
+
+            <Toast />
         </ImageBackground>
     );
 }

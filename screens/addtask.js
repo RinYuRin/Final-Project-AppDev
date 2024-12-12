@@ -26,7 +26,6 @@ export default function AddTask() {
         return null;
     }
 
-    // Array of task items
     const chores = [
         { id: 1, image: bed, task: "Make your bed", reward: "+₱5.00" },
         { id: 2, image: dishes, task: "Wash the Dishes", reward: "+₱20.00" },

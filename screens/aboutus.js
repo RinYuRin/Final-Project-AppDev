@@ -18,7 +18,6 @@ export default function AboutUs() {
 
   return (
     <View style={styles.container}>
-      {/* Header Section */}
       <View style={styles.header}>
         <Image
           source={require("../assets/pictures/logo3 1.png")}
