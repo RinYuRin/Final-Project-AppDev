@@ -190,7 +190,7 @@ export default function Dashboard() {
                         <Image source={home} style={styles.navbarButtonImage} />
                         <Text style={styles.navbarText}>Home</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => navigation.navigate('AddTask')} style={styles.navbarButton}>
+                    <TouchableOpacity onPress={() => navigation.navigate('Task')} style={styles.navbarButton}>
                         <Image source={task} style={styles.navbarButtonImage} />
                         <Text style={styles.navbarText}>Tasks</Text>
                     </TouchableOpacity>

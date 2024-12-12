@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
+import { ref, set, onValue } from 'firebase/database';
+import { auth, realtimedb } from '../firebaseConfig';
+import Toast from 'react-native-toast-message';
 import bed from '../assets/pictures/image (3) 1.png';
 import dishes from '../assets/pictures/image (5) 1.png';
 import pet from '../assets/pictures/image (6) 1.png';
@@ -13,56 +16,142 @@ import home from '../assets/pictures/home.png';
 import task from '../assets/pictures/task.png';
 import logout from '../assets/pictures/logout.png';
 
-
-export default function AddTask() {
+export default function Task() {
     const navigation = useNavigation();
+    const [userId, setUserId] = useState(null);
+
     const [loaded] = useFonts({
         'Poppins-Bold': require('../assets/fonts/Poppins-Bold.ttf'),
         'Poppins-Regular': require('../assets/fonts/Poppins-Regular.ttf'),
-        'Poppins-Black': require('../assets/fonts/Poppins-BlackItalic.ttf'),
     });
+
+    useEffect(() => {
+        const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+            if (user) {
+                setUserId(user.uid);
+            } else {
+                navigation.navigate('Signin');
+            }
+        });
+
+        return () => unsubscribeAuth();
+    }, [navigation]);
 
     if (!loaded) {
         return null;
     }
 
     const chores = [
-        { id: 1, image: bed, task: "Make your bed", reward: "+₱5.00" },
-        { id: 2, image: dishes, task: "Wash the Dishes", reward: "+₱20.00" },
-        { id: 3, image: pet, task: "Feed the Pet", reward: "+₱15.00" },
+        { id: 1, image: bed, task: "Make your bed", reward: 5 },
+        { id: 2, image: dishes, task: "Wash the Dishes", reward: 20 },
+        { id: 3, image: pet, task: "Feed the Pet", reward: 15 },
     ];
 
     const homework = [
-        { id: 1, image: dohomework, task: "Do the homework", reward: "+₱5.00" },
-        { id: 2, image: read, task: "Read for 20 minutes", reward: "+₱20.00" },
+        { id: 4, image: dohomework, task: "Do the homework", reward: 5 },
+        { id: 5, image: read, task: "Read for 20 minutes", reward: 20 },
     ];
 
     const hygiene = [
-        { id: 1, image: bath, task: "Take a Bath", reward: "+₱20.00" },
-        { id: 2, image: brush, task: "Brush your Teeth", reward: "+₱20.00" },
+        { id: 6, image: bath, task: "Take a Bath", reward: 20 },
+        { id: 7, image: brush, task: "Brush your Teeth", reward: 20 },
     ];
+
+    const handleTaskClick = (id, task, reward) => {
+        if (!userId) return;
+
+        const taskRef = ref(realtimedb, `users/${userId}/tasks/${id}`);
+
+        onValue(taskRef, (snapshot) => {
+            const taskData = snapshot.val();
+            const currentTime = Date.now();
+
+            if (taskData?.completed && currentTime - taskData.timestamp < 86400000) {
+                Toast.show({
+                    type: 'info',
+                    text1: 'Task already completed',
+                    text2: 'You can complete this task again tomorrow!',
+                });
+                return;
+            }
+
+            set(taskRef, {
+                task,
+                reward,
+                completed: true,
+                timestamp: currentTime,
+            })
+                .then(() => {
+                    const savingsRef = ref(realtimedb, `users/${userId}/savings`);
+
+                    onValue(
+                        savingsRef,
+                        (snapshot) => {
+                            const currentSavings = snapshot.val() || 0;
+                            set(savingsRef, currentSavings + reward);
+                        },
+                        { onlyOnce: true }
+                    );
+
+                    Toast.show({
+                        type: 'success',
+                        text1: 'Task Completed!',
+                        text2: `You've earned ₱${reward.toFixed(2)}`,
+                    });
+                })
+                .catch((error) => {
+                    console.error("Error saving task to database:", error);
+
+                    Toast.show({
+                        type: 'error',
+                        text1: 'Error',
+                        text2: 'Could not complete the task. Try again.',
+                    });
+                });
+        }, { onlyOnce: true });
+    };
 
     return (
         <View style={{ backgroundColor: '#CBE3C1', flex: 1 }}>
             <View style={styles.header}>
-                <Text style={styles.greeting}>Motivate Stephanie to 
-                Save Coins!</Text>
+                <Text style={styles.greeting}>Motivate Stephanie to Save Coins!</Text>
             </View>
 
             <ScrollView contentContainerStyle={styles.taskContainer}>
                 <Text style={styles.taskHeader}>Chore Tasks</Text>
                 {chores.map((task) => (
-                    <TaskItem key={task.id} image={task.image} task={task.task} reward={task.reward} />
+                    <TaskItem
+                        key={task.id}
+                        id={task.id}
+                        image={task.image}
+                        task={task.task}
+                        reward={task.reward}
+                        onTaskClick={handleTaskClick}
+                    />
                 ))}
 
                 <Text style={styles.taskHeader}>Homework and School Tasks</Text>
                 {homework.map((task) => (
-                    <TaskItem key={task.id} image={task.image} task={task.task} reward={task.reward} />
+                    <TaskItem
+                        key={task.id}
+                        id={task.id}
+                        image={task.image}
+                        task={task.task}
+                        reward={task.reward}
+                        onTaskClick={handleTaskClick}
+                    />
                 ))}
 
                 <Text style={styles.taskHeader}>Personal Hygiene Tasks</Text>
                 {hygiene.map((task) => (
-                    <TaskItem key={task.id} image={task.image} task={task.task} reward={task.reward} />
+                    <TaskItem
+                        key={task.id}
+                        id={task.id}
+                        image={task.image}
+                        task={task.task}
+                        reward={task.reward}
+                        onTaskClick={handleTaskClick}
+                    />
                 ))}
             </ScrollView>
 
@@ -72,7 +161,7 @@ export default function AddTask() {
                         <Image source={home} style={styles.navbarButtonImage} />
                         <Text style={styles.navbarText}>Home</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => navigation.navigate('Tasks')} style={styles.navbarButton}>
+                    <TouchableOpacity onPress={() => navigation.navigate('Task')} style={styles.navbarButton}>
                         <Image source={task} style={styles.navbarButtonImage} />
                         <Text style={styles.navbarText}>Tasks</Text>
                     </TouchableOpacity>
@@ -82,20 +171,23 @@ export default function AddTask() {
                     </TouchableOpacity>
                 </View>
             </View>
+
+            <Toast />
         </View>
     );
 }
 
-// TaskItem component to display individual tasks
-const TaskItem = ({ image, task, reward }) => {
+const TaskItem = ({ id, image, task, reward, onTaskClick }) => {
     return (
-        <View style={styles.taskItem}>
-            <Image source={image} style={styles.taskImage} />
-            <View style={styles.taskDetails}>
-                <Text style={styles.taskText}>{task}</Text>
-                <Text style={styles.rewardText}>{reward}</Text>
+        <TouchableOpacity onPress={() => onTaskClick(id, task, reward)}>
+            <View style={styles.taskItem}>
+                <Image source={image} style={styles.taskImage} />
+                <View style={styles.taskDetails}>
+                    <Text style={styles.taskText}>{task}</Text>
+                    <Text style={styles.rewardText}>+₱{reward.toFixed(2)}</Text>
+                </View>
             </View>
-        </View>
+        </TouchableOpacity>
     );
 };
 
